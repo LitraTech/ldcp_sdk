@@ -30,6 +30,11 @@ const Location& Device::location() const
   return *location_;
 }
 
+void Device::setTimeout(int timeout)
+{
+  session_->setTimeout(timeout);
+}
+
 error_t Device::open()
 {
   return session_->open(*location_);

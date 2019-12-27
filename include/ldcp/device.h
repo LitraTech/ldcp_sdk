@@ -19,6 +19,8 @@ public:
 
   const Location& location() const;
 
+  void setTimeout(int timeout);
+
   error_t open();
   void close();
 
