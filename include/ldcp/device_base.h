@@ -25,6 +25,8 @@ public:
   error_t open();
   void close();
 
+  error_t queryOperationMode(std::string& mode);
+
 protected:
   std::unique_ptr<Location> location_;
   std::unique_ptr<Session> session_;

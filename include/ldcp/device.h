@@ -15,19 +15,21 @@ public:
   Device(const Location& location);
   Device(DeviceBase&& other);
 
-  error_t getIdentityInfo(std::map<std::string, std::string>& identity_info);
-  error_t getVersionInfo(std::map<std::string, std::string>& version_info);
-  error_t getStatusInfo(std::map<std::string, std::string>& status_info);
-  error_t enterLowPower();
-  error_t exitLowPower();
+  error_t queryModel(std::string& model);
+  error_t querySerial(std::string& serial);
+  error_t queryFirmwareVersion(std::string& firmware_version);
+  error_t queryHardwareVersion(std::string& hardware_version);
+  error_t queryState(std::string& state);
+
   error_t readTimestamp(uint32_t& timestamp);
   error_t resetTimestamp();
-  void reboot();
-  void rebootToBootloader();
 
+  error_t startMeasurement();
+  error_t stopMeasurement();
   error_t startStreaming();
-  error_t readScanBlock(ScanBlock& scan_block);
   error_t stopStreaming();
+
+  error_t readScanBlock(ScanBlock& scan_block);
 };
 
 }

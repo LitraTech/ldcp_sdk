@@ -48,4 +48,21 @@ void DeviceBase::close()
   session_->close();
 }
 
+error_t DeviceBase::queryOperationMode(std::string& mode)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("device/queryInfo");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "mode", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    mode = response["result"].GetString();
+
+  return result;
+}
+
 }

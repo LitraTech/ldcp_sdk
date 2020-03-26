@@ -20,79 +20,88 @@ Device::Device(DeviceBase&& other)
 {
 }
 
-error_t Device::getIdentityInfo(std::map<std::string, std::string>& identity_info)
+error_t Device::queryModel(std::string& model)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
   request["method"].SetString("device/queryInfo");
   request.AddMember("params",
                     rapidjson::Value().SetObject()
-                      .AddMember("category", "identity", allocator), allocator);
+                      .AddMember("entry", "identity.model", allocator), allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
 
-  if (result == error_t::no_error) {
-    identity_info.clear();
-    for (const auto& member : response["result"].GetObject())
-      identity_info[member.name.GetString()] = member.value.GetString();
-  }
+  if (result == error_t::no_error)
+    model = response["result"].GetString();
 
   return result;
 }
 
-error_t Device::getVersionInfo(std::map<std::string, std::string>& version_info)
+error_t Device::querySerial(std::string& serial)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
   request["method"].SetString("device/queryInfo");
   request.AddMember("params",
                     rapidjson::Value().SetObject()
-                      .AddMember("category", "version", allocator), allocator);
+                      .AddMember("entry", "identity.serial", allocator), allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
 
-  if (result == error_t::no_error) {
-    version_info.clear();
-    for (const auto& member : response["result"].GetObject())
-      version_info[member.name.GetString()] = member.value.GetString();
-  }
+  if (result == error_t::no_error)
+    serial = response["result"].GetString();
 
   return result;
 }
 
-error_t Device::getStatusInfo(std::map<std::string, std::string>& status_info)
+error_t Device::queryFirmwareVersion(std::string& firmware_version)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
   request["method"].SetString("device/queryInfo");
   request.AddMember("params",
                     rapidjson::Value().SetObject()
-                      .AddMember("category", "status", allocator), allocator);
+                      .AddMember("entry", "version.firmware", allocator), allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
 
-  if (result == error_t::no_error) {
-    status_info.clear();
-    for (const auto& member : response["result"].GetObject())
-      status_info[member.name.GetString()] = member.value.GetString();
-  }
+  if (result == error_t::no_error)
+    firmware_version = response["result"].GetString();
 
   return result;
 }
 
-error_t Device::enterLowPower()
+error_t Device::queryHardwareVersion(std::string& hardware_version)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("device/enterLowPower");
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("device/queryInfo");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "version.hardware", allocator), allocator);
+
   error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    hardware_version = response["result"].GetString();
+
   return result;
 }
 
-error_t Device::exitLowPower()
+error_t Device::queryState(std::string& state)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("device/exitLowPower");
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("device/queryInfo");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "status.state", allocator), allocator);
+
   error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    state = response["result"].GetString();
+
   return result;
 }
 
@@ -114,24 +123,34 @@ error_t Device::resetTimestamp()
   return result;
 }
 
-void Device::reboot()
+error_t Device::startMeasurement()
 {
-  rapidjson::Document request = session_->createEmptyRequestObject();
-  request["method"].SetString("device/reboot");
-  session_->executeCommand(std::move(request));
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  request["method"].SetString("scan/startMeasurement");
+  error_t result = session_->executeCommand(std::move(request), response);
+  return result;
 }
 
-void Device::rebootToBootloader()
+error_t Device::stopMeasurement()
 {
-  rapidjson::Document request = session_->createEmptyRequestObject();
-  request["method"].SetString("device/rebootToBootloader");
-  session_->executeCommand(std::move(request));
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  request["method"].SetString("scan/stopMeasurement");
+  error_t result = session_->executeCommand(std::move(request), response);
+  return result;
 }
 
 error_t Device::startStreaming()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   request["method"].SetString("scan/startStreaming");
+  error_t result = session_->executeCommand(std::move(request), response);
+  return result;
+}
+
+error_t Device::stopStreaming()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  request["method"].SetString("scan/stopStreaming");
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
 }
@@ -165,14 +184,6 @@ error_t Device::readScanBlock(ScanBlock& scan_block)
     }
   }
 
-  return result;
-}
-
-error_t Device::stopStreaming()
-{
-  rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("scan/stopStreaming");
-  error_t result = session_->executeCommand(std::move(request), response);
   return result;
 }
 
