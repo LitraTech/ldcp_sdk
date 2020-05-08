@@ -30,6 +30,12 @@ public:
   error_t stopStreaming();
 
   error_t readScanBlock(ScanBlock& scan_block);
+
+  error_t getNetworkAddress(in_addr_t& address);
+  error_t getSubnetMask(in_addr_t& subnet);
+  error_t setNetworkAddress(in_addr_t address);
+  error_t setSubnetMask(in_addr_t subnet);
+  error_t persistSettings();
 };
 
 }

@@ -26,6 +26,7 @@ public:
   void close();
 
   error_t queryOperationMode(std::string& mode);
+  void reboot();
 
 protected:
   std::unique_ptr<Location> location_;

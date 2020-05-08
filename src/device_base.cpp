@@ -65,4 +65,11 @@ error_t DeviceBase::queryOperationMode(std::string& mode)
   return result;
 }
 
+void DeviceBase::reboot()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject();
+  request["method"].SetString("device/reboot");
+  session_->executeCommand(std::move(request));
+}
+
 }

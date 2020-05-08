@@ -2,6 +2,8 @@
 #include "ldcp/session.h"
 #include "ldcp/utility.h"
 
+#include <asio.hpp>
+
 namespace ldcp_sdk
 {
 
@@ -183,6 +185,85 @@ error_t Device::readScanBlock(ScanBlock& scan_block)
       }
     }
   }
+
+  return result;
+}
+
+error_t Device::getNetworkAddress(in_addr_t& address)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.ipv4.address", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    address = htonl(asio::ip::address_v4::from_string(response["result"].GetString()).to_uint());
+
+  return result;
+}
+
+error_t Device::getSubnetMask(in_addr_t& subnet)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.ipv4.subnet", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    subnet = htonl(asio::ip::address_v4::from_string(response["result"].GetString()).to_uint());
+
+  return result;
+}
+
+error_t Device::setNetworkAddress(in_addr_t address)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.ipv4.address", allocator)
+                      .AddMember("value", rapidjson::Value().SetString(
+                        asio::ip::address_v4(ntohl(address)).to_string().c_str(), allocator), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setSubnetMask(in_addr_t subnet)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.ipv4.subnet", allocator)
+                      .AddMember("value", rapidjson::Value().SetString(
+                        asio::ip::address_v4(ntohl(subnet)).to_string().c_str(), allocator), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::persistSettings()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/persist");
+
+  error_t result = session_->executeCommand(std::move(request), response);
 
   return result;
 }
