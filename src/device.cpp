@@ -223,6 +223,23 @@ error_t Device::getSubnetMask(in_addr_t& subnet)
   return result;
 }
 
+error_t Device::getScanFrequency(int& frequency)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "scan.frequency", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    frequency = response["result"].GetInt();
+
+  return result;
+}
+
 error_t Device::setNetworkAddress(in_addr_t address)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;

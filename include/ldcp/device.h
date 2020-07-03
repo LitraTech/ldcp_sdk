@@ -33,6 +33,7 @@ public:
 
   error_t getNetworkAddress(in_addr_t& address);
   error_t getSubnetMask(in_addr_t& subnet);
+  error_t getScanFrequency(int& frequency);
   error_t setNetworkAddress(in_addr_t address);
   error_t setSubnetMask(in_addr_t subnet);
   error_t persistSettings();
