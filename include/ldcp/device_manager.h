@@ -1,6 +1,7 @@
 #ifndef LDCP_SDK_DEVICE_MANAGER_H_
 #define LDCP_SDK_DEVICE_MANAGER_H_
 
+#include "ldcp/common.h"
 #include "ldcp/device_info.h"
 
 #include <functional>
@@ -20,7 +21,7 @@ typedef std::function<void(DeviceEvent, const DeviceInfo&)> DeviceEventCallback;
 
 class DeviceNotifier;
 
-class DeviceManager
+class LDCP_SDK_API DeviceManager
 {
 public:
   static DeviceManager& instance();

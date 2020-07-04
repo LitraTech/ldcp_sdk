@@ -1,6 +1,8 @@
 #ifndef LDCP_SDK_LOCATION_H_
 #define LDCP_SDK_LOCATION_H_
 
+#include "ldcp/common.h"
+
 #ifdef __linux__
 #include <netinet/in.h>
 #elif _WIN32
@@ -12,7 +14,7 @@ typedef USHORT in_port_t;
 namespace ldcp_sdk
 {
 
-class Location
+class LDCP_SDK_API Location
 {
 public:
   virtual ~Location() = default;
@@ -21,7 +23,7 @@ protected:
   Location() = default;
 };
 
-class NetworkLocation : public Location
+class LDCP_SDK_API NetworkLocation : public Location
 {
 public:
   NetworkLocation(in_addr_t address, in_port_t port);

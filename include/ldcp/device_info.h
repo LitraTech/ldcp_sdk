@@ -1,6 +1,7 @@
 #ifndef LDCP_SDK_DEVICE_INFO_H_
 #define LDCP_SDK_DEVICE_INFO_H_
 
+#include "ldcp/common.h"
 #include "ldcp/location.h"
 
 #include <memory>
@@ -10,7 +11,7 @@
 namespace ldcp_sdk
 {
 
-class DeviceInfo
+class LDCP_SDK_API DeviceInfo
 {
 public:
   DeviceInfo(const std::string& id, const Location& location);

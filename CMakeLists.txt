@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 
 project(ldcp_sdk)
 
+option(BUILD_SHARED_LIBS "Build as shared library" ON)
 option(BUILD_DEVICE_MANAGER "Build device manager" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -23,7 +24,7 @@ if(BUILD_DEVICE_MANAGER)
     "${SDK_SRC_DIR}/device_notifier.cpp"
   )
 endif()
-add_library(${PROJECT_NAME} STATIC ${SDK_SRC})
+add_library(${PROJECT_NAME} ${SDK_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 target_include_directories(${PROJECT_NAME}
@@ -41,6 +42,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   add_definitions(-D_WIN32_WINNT=0x0501 -DNOMINMAX)
   set(SDK_LIB_DEPS WS2_32.Lib)
+  if (BUILD_SHARED_LIBS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LDCP_SDK_EXPORTS)
+  endif()
   if(BUILD_DEVICE_MANAGER)
     set(BONJOUR_SDK_DIR "C:/Program Files/Bonjour SDK" CACHE STRING "Directory of Bonjour SDK")
     target_include_directories(${PROJECT_NAME} PRIVATE "${BONJOUR_SDK_DIR}/Include")

@@ -1,6 +1,7 @@
 #ifndef LDCP_SDK_DEVICE_NOTIFIER_H_
 #define LDCP_SDK_DEVICE_NOTIFIER_H_
 
+#include "ldcp/common.h"
 #include "ldcp/device_manager.h"
 
 #include <thread>
@@ -11,7 +12,7 @@ namespace ldcp_sdk
 typedef std::function<void(const DeviceInfo& new_entry)> DeviceAttachHandler;
 typedef std::function<void(const std::string& id)> DeviceDetachHandler;
 
-class DeviceNotifier
+class LDCP_SDK_API DeviceNotifier
 {
   friend class DeviceManager;
 
@@ -32,7 +33,7 @@ protected:
   DeviceDetachHandler device_detach_handler_;
 };
 
-class NetworkDeviceNotifier : public DeviceNotifier
+class LDCP_SDK_API NetworkDeviceNotifier : public DeviceNotifier
 {
 public:
   static NetworkDeviceNotifier& instance();

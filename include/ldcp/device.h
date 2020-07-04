@@ -1,6 +1,7 @@
 #ifndef LDCP_SDK_DEVICE_H_
 #define LDCP_SDK_DEVICE_H_
 
+#include "ldcp/common.h"
 #include "ldcp/device_base.h"
 
 namespace ldcp_sdk
@@ -8,7 +9,7 @@ namespace ldcp_sdk
 
 class Session;
 
-class Device : public DeviceBase
+class LDCP_SDK_API Device : public DeviceBase
 {
 public:
   Device(const DeviceInfo& device_info);

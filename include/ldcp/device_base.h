@@ -1,6 +1,7 @@
 #ifndef LDCP_SDK_DEVICE_BASE_H_
 #define LDCP_SDK_DEVICE_BASE_H_
 
+#include "ldcp/common.h"
 #include "ldcp/device_info.h"
 #include "ldcp/error.h"
 #include "ldcp/data_types.h"
@@ -10,7 +11,7 @@ namespace ldcp_sdk
 
 class Session;
 
-class DeviceBase
+class LDCP_SDK_API DeviceBase
 {
 public:
   DeviceBase(const DeviceInfo& device_info);
