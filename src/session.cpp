@@ -54,6 +54,7 @@ void Session::close()
 
   response_queue_.clear();
   scan_block_queue_primary_.clear();
+  scan_block_queue_oob_.clear();
 }
 
 bool Session::isOpened() const
@@ -131,7 +132,7 @@ error_t Session::enableOobTransport(const Location& location)
   return transport_->enableOob(location);
 }
 
-error_t Session::pollForScanBlock(rapidjson::Document& notification, std::vector<uint8_t>& oob_packet)
+error_t Session::pollForScanBlock(rapidjson::Document& notification, std::vector<uint8_t>& oob_data)
 {
   std::unique_lock<std::mutex> lock(scan_block_queue_mutex_);
   bool wait_result = scan_block_queue_cv_.wait_for(lock, std::chrono::milliseconds(timeout_), [&]() {
@@ -143,7 +144,7 @@ error_t Session::pollForScanBlock(rapidjson::Document& notification, std::vector
       scan_block_queue_primary_.pop_front();
     }
     else if (scan_block_queue_oob_.size() > 0) {
-      oob_packet = std::move(scan_block_queue_oob_.front());
+      oob_data = std::move(scan_block_queue_oob_.front());
       scan_block_queue_oob_.pop_front();
     }
     return error_t::no_error;
@@ -176,12 +177,12 @@ void Session::onMessageReceived(rapidjson::Document message)
   }
 }
 
-void Session::onOobPacketReceived(std::vector<uint8_t> oob_data)
+void Session::onOobPacketReceived(std::vector<uint8_t> oob_packet)
 {
   std::lock_guard<std::mutex> lock(scan_block_queue_mutex_);
   if (scan_block_queue_oob_.size() == SCAN_BLOCK_BUFFERING_COUNT)
     scan_block_queue_oob_.pop_front();
-  scan_block_queue_oob_.push_back(std::move(oob_data));
+  scan_block_queue_oob_.push_back(std::move(oob_packet));
   scan_block_queue_cv_.notify_one();
 }
 

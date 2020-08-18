@@ -30,11 +30,11 @@ public:
   error_t enableOobTransport(const Location& location);
 
   error_t pollForScanBlock(rapidjson::Document& notification,
-                           std::vector<uint8_t>& oob_packet);
+                           std::vector<uint8_t>& oob_data);
 
 private:
   void onMessageReceived(rapidjson::Document message);
-  void onOobPacketReceived(std::vector<uint8_t> oob_data);
+  void onOobPacketReceived(std::vector<uint8_t> oob_packet);
 
 private:
   static const int DEFAULT_TIMEOUT = 3000;
