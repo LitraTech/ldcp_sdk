@@ -32,12 +32,13 @@ const int LASER_SCAN_BLOCK_LENGTH_25HZ_30hz = 96;
 struct OobPacket
 {
   uint16_t signature;
+  uint16_t frame_num;
   uint8_t block_num;
   uint8_t flags;
-  uint16_t frame_num;
-  uint16_t checksum;
+  uint16_t count;
   uint32_t timestamp;
-  uint32_t reserved;
+  uint16_t checksum;
+  uint16_t reserved;
   union {
     struct {
       uint16_t ranges[LASER_SCAN_BLOCK_LENGTH_10HZ];

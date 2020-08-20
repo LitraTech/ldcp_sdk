@@ -211,28 +211,24 @@ error_t Device::readScanBlock(ScanBlock& scan_block)
     else if (oob_data.size() > 0) {
       const OobPacket* oob_packet = reinterpret_cast<const OobPacket*>(oob_data.data());
 
-      int block_length = 0;
+      int block_length = oob_packet->count;
       const uint16_t* ranges = nullptr;
       const uint8_t* intensities = nullptr;
 
-      switch (oob_data.size()) {
-        case offsetof(OobPacket, payload_10hz) + sizeof(OobPacket::payload_10hz):
-          block_length = LASER_SCAN_BLOCK_LENGTH_10HZ;
+      switch (block_length) {
+        case LASER_SCAN_BLOCK_LENGTH_10HZ:
           ranges = oob_packet->payload_10hz.ranges;
           intensities = oob_packet->payload_10hz.intensities;
           break;
-        case offsetof(OobPacket, payload_15hz) + sizeof(OobPacket::payload_15hz):
-          block_length = LASER_SCAN_BLOCK_LENGTH_15HZ;
+        case LASER_SCAN_BLOCK_LENGTH_15HZ:
           ranges = oob_packet->payload_15hz.ranges;
           intensities = oob_packet->payload_15hz.intensities;
           break;
-        case offsetof(OobPacket, payload_20hz) + sizeof(OobPacket::payload_20hz):
-          block_length = LASER_SCAN_BLOCK_LENGTH_20HZ;
+        case LASER_SCAN_BLOCK_LENGTH_20HZ:
           ranges = oob_packet->payload_20hz.ranges;
           intensities = oob_packet->payload_20hz.intensities;
           break;
-        case offsetof(OobPacket, payload_25hz_30hz) + sizeof(OobPacket::payload_25hz_30hz):
-          block_length = LASER_SCAN_BLOCK_LENGTH_25HZ_30hz;
+        case LASER_SCAN_BLOCK_LENGTH_25HZ_30hz:
           ranges = oob_packet->payload_25hz_30hz.ranges;
           intensities = oob_packet->payload_25hz_30hz.intensities;
           break;
