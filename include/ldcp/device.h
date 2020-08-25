@@ -22,6 +22,7 @@ public:
   error_t queryFirmwareVersion(std::string& firmware_version);
   error_t queryHardwareVersion(std::string& hardware_version);
   error_t queryState(std::string& state);
+  error_t queryMotorFrequency(double& motor_frequency);
 
   error_t readTimestamp(uint32_t& timestamp);
   error_t resetTimestamp();
@@ -31,6 +32,7 @@ public:
   error_t startStreaming();
   error_t stopStreaming();
 
+  error_t readScanFrame(ScanFrame& scan_frame);
   error_t readScanBlock(ScanBlock& scan_block);
 
   error_t getNetworkAddress(in_addr_t& address);
@@ -41,6 +43,10 @@ public:
   error_t getOobTargetPort(in_port_t& port);
   error_t setNetworkAddress(in_addr_t address);
   error_t setSubnetMask(in_addr_t subnet);
+  error_t setScanFrequency(int frequency);
+  error_t setOobEnabled(bool enabled);
+  error_t setOobTargetAddress(in_addr_t address);
+  error_t setOobTargetPort(in_port_t port);
   error_t persistSettings();
 };
 

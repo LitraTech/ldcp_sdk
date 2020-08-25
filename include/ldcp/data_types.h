@@ -60,6 +60,20 @@ struct OobPacket
 };
 #pragma pack(pop)
 
+class ScanFrame
+{
+public:
+  class FrameData
+  {
+  public:
+    std::vector<uint16_t> ranges;
+    std::vector<uint8_t> intensities;
+  };
+
+  uint32_t timestamp;
+  std::vector<FrameData> layers;
+};
+
 }
 
 #endif
