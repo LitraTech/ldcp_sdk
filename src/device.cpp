@@ -514,4 +514,11 @@ error_t Device::persistSettings()
   return result;
 }
 
+void Device::rebootToBootloader()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject();
+  request["method"].SetString("device/rebootToBootloader");
+  session_->executeCommand(std::move(request));
+}
+
 }
