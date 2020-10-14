@@ -302,6 +302,26 @@ error_t Device::readScanBlock(ScanBlock& scan_block)
   return result;
 }
 
+error_t Device::getUserMacAddress(uint8_t address[])
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.mac", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error) {
+    std::string value = response["result"].GetString();
+    for (int i = 0; i < 6; i++)
+      address[i] = std::stoi(value.substr(i * 3, 2), nullptr, 16);
+  }
+
+  return result;
+}
+
 error_t Device::getNetworkAddress(in_addr_t& address)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
@@ -400,6 +420,27 @@ error_t Device::getOobTargetPort(in_port_t& port)
 
   if (result == error_t::no_error)
     port = htons(response["result"].GetInt());
+
+  return result;
+}
+
+error_t Device::setUserMacAddress(const uint8_t address[])
+{
+  std::string value(17 + 1, '\0');
+  std::snprintf(&value[0], value.length(), "%02X:%02X:%02X:%02X:%02X:%02X",
+    address[0], address[1], address[2], address[3], address[4], address[5]);
+
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.mac", allocator)
+                      .AddMember("value", rapidjson::Value().SetString(
+                        value.c_str(), allocator), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
 
   return result;
 }
