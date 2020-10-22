@@ -373,6 +373,38 @@ error_t Device::getScanFrequency(int& frequency)
   return result;
 }
 
+error_t Device::isShadowFilterEnabled(bool& enabled)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "filters.shadowFilter.enabled", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+  if (result == error_t::no_error)
+    enabled = response["result"].GetBool();
+
+  return result;
+}
+
+error_t Device::getShadowFilterStrength(int& strength)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "filters.shadowFilter.strength", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+  if (result == error_t::no_error)
+    strength = response["result"].GetInt();
+
+  return result;
+}
+
 error_t Device::isOobEnabled(bool& enabled)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
@@ -488,6 +520,38 @@ error_t Device::setScanFrequency(int frequency)
                     rapidjson::Value().SetObject()
                       .AddMember("entry", "scan.frequency", allocator)
                       .AddMember("value", frequency, allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setShadowFilterEnabled(bool enabled)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "filters.shadowFilter.enabled", allocator)
+                      .AddMember("value", enabled, allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setShadowFilterStrength(int strength)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "filters.shadowFilter.strength", allocator)
+                      .AddMember("value", strength, allocator),
                     allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
