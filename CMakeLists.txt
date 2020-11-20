@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8.3)
 
 project(ldcp_sdk)
 
@@ -13,6 +13,7 @@ set(SDK_SRC_DIR "src")
 set(SDK_SRC
   "${SDK_SRC_DIR}/device_base.cpp"
   "${SDK_SRC_DIR}/device.cpp"
+  "${SDK_SRC_DIR}/bootloader.cpp"
   "${SDK_SRC_DIR}/device_info.cpp"
   "${SDK_SRC_DIR}/location.cpp"
   "${SDK_SRC_DIR}/session.cpp"
