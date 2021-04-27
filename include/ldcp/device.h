@@ -38,6 +38,7 @@ public:
   error_t getUserMacAddress(uint8_t address[]);
   error_t getNetworkAddress(in_addr_t& address);
   error_t getSubnetMask(in_addr_t& subnet);
+  error_t getHostName(std::string& host_name);
   error_t getScanFrequency(int& frequency);
   error_t isShadowFilterEnabled(bool& enabled);
   error_t getShadowFilterStrength(int& strength);
@@ -47,6 +48,7 @@ public:
   error_t setUserMacAddress(const uint8_t address[]);
   error_t setNetworkAddress(in_addr_t address);
   error_t setSubnetMask(in_addr_t subnet);
+  error_t setHostName(const std::string& host_name);
   error_t setScanFrequency(int frequency);
   error_t setShadowFilterEnabled(bool enabled);
   error_t setShadowFilterStrength(int strength);

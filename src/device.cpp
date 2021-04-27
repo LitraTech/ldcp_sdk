@@ -356,6 +356,23 @@ error_t Device::getSubnetMask(in_addr_t& subnet)
   return result;
 }
 
+error_t Device::getHostName(std::string& host_name)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.hostName", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    host_name = response["result"].GetString();
+
+  return result;
+}
+
 error_t Device::getScanFrequency(int& frequency)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
@@ -504,6 +521,23 @@ error_t Device::setSubnetMask(in_addr_t subnet)
                       .AddMember("entry", "connectivity.network.ipv4.subnet", allocator)
                       .AddMember("value", rapidjson::Value().SetString(
                         asio::ip::address_v4(ntohl(subnet)).to_string().c_str(), allocator), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setHostName(const std::string& host_name)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "connectivity.network.hostName", allocator)
+                      .AddMember("value", rapidjson::Value().SetString(
+                        host_name.c_str(), allocator), allocator),
                     allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
