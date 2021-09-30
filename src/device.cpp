@@ -439,6 +439,22 @@ error_t Device::isOobEnabled(bool& enabled)
   return result;
 }
 
+error_t Device::getOobAutoStartStreaming(bool& enabled)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/get");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "transport.oob.autoStartStreaming", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+  if (result == error_t::no_error)
+    enabled = response["result"].GetBool();
+
+  return result;
+}
+
 error_t Device::getOobTargetAddress(in_addr_t& address)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
@@ -601,6 +617,22 @@ error_t Device::setOobEnabled(bool enabled)
   request.AddMember("params",
                     rapidjson::Value().SetObject()
                       .AddMember("entry", "transport.oob.enabled", allocator)
+                      .AddMember("value", enabled, allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setOobAutoStartStreaming(bool enabled)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request["method"].SetString("settings/set");
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "transport.oob.autoStartStreaming", allocator)
                       .AddMember("value", enabled, allocator),
                     allocator);
 

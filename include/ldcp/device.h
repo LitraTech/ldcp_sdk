@@ -43,6 +43,7 @@ public:
   error_t isShadowFilterEnabled(bool& enabled);
   error_t getShadowFilterStrength(int& strength);
   error_t isOobEnabled(bool& enabled);
+  error_t getOobAutoStartStreaming(bool& enabled);
   error_t getOobTargetAddress(in_addr_t& address);
   error_t getOobTargetPort(in_port_t& port);
   error_t setUserMacAddress(const uint8_t address[]);
@@ -53,6 +54,7 @@ public:
   error_t setShadowFilterEnabled(bool enabled);
   error_t setShadowFilterStrength(int strength);
   error_t setOobEnabled(bool enabled);
+  error_t setOobAutoStartStreaming(bool enabled);
   error_t setOobTargetAddress(in_addr_t address);
   error_t setOobTargetPort(in_port_t port);
   error_t persistSettings();
