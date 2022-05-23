@@ -33,9 +33,9 @@ const Location& DeviceBase::location() const
   return *location_;
 }
 
-void DeviceBase::setTimeout(int timeout)
+void DeviceBase::setTimeout(int timeout_ms)
 {
-  session_->setTimeout(timeout);
+  session_->setTimeout(timeout_ms);
 }
 
 error_t DeviceBase::open()
@@ -53,14 +53,14 @@ void DeviceBase::close()
   session_->close();
 }
 
-error_t DeviceBase::queryOperationMode(std::string& mode)
+error_t DeviceBase::queryBootMode(std::string& mode)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
   request["method"].SetString("device/queryInfo");
   request.AddMember("params",
                     rapidjson::Value().SetObject()
-                      .AddMember("entry", "mode", allocator), allocator);
+                      .AddMember("entry", "device.bootMode", allocator), allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
 

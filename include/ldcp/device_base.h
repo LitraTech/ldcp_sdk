@@ -20,13 +20,13 @@ public:
 
   const Location& location() const;
 
-  void setTimeout(int timeout);
+  void setTimeout(int timeout_ms);
 
   virtual error_t open();
   bool isOpened() const;
   void close();
 
-  error_t queryOperationMode(std::string& mode);
+  error_t queryBootMode(std::string& mode);
   void reboot();
 
 protected:

@@ -17,14 +17,14 @@ typedef enum {
 } ldcp_error_t;
 
 Session::Session()
-  : timeout_(DEFAULT_TIMEOUT)
+  : timeout_ms_(DEFAULT_TIMEOUT)
   , id_(-1)
 {
 }
 
-void Session::setTimeout(int timeout)
+void Session::setTimeout(int timeout_ms)
 {
-  timeout_ = timeout;
+  timeout_ms_ = timeout_ms;
 }
 
 error_t Session::open(const Location& location)
@@ -37,8 +37,8 @@ error_t Session::open(const Location& location)
 #else
   transport_->setReceivedMessageCallback(std::bind(&Session::onMessageReceived, this, std::placeholders::_1));
 #endif
-  transport_->setReceivedOobPacketCallback(std::bind(&Session::onOobPacketReceived, this, std::placeholders::_1));
-  error_t connect_result = transport_->connect(timeout_);
+  transport_->setReceivedScanPacketCallback(std::bind(&Session::onScanPacketReceived, this, std::placeholders::_1));
+  error_t connect_result = transport_->connect(timeout_ms_);
   if (connect_result != error_t::no_error)
     transport_ = nullptr;
   return connect_result;
@@ -53,8 +53,7 @@ void Session::close()
   }
 
   response_queue_.clear();
-  scan_block_queue_primary_.clear();
-  scan_block_queue_oob_.clear();
+  scan_packet_queue_.clear();
 }
 
 bool Session::isOpened() const
@@ -89,7 +88,7 @@ error_t Session::executeCommand(rapidjson::Document request, rapidjson::Document
   request.AddMember("id", ++id_, request.GetAllocator());
   transport_->transmitMessage(std::move(request));
 
-  bool wait_result = response_queue_cv_.wait_for(response_queue_lock, std::chrono::milliseconds(timeout_), [&]() {
+  bool wait_result = response_queue_cv_.wait_for(response_queue_lock, std::chrono::milliseconds(timeout_ms_), [&]() {
     std::remove_if(response_queue_.begin(), response_queue_.end(), [&](const rapidjson::Document& document) {
       return (document["id"].GetInt() < id_);
     });
@@ -129,25 +128,21 @@ error_t Session::executeCommand(rapidjson::Document request, rapidjson::Document
     return error_t::timed_out;
 }
 
-error_t Session::enableOobTransport(const Location& location)
+error_t Session::openDataChannel(const in_port_t local_port)
 {
-  return transport_->enableOob(location);
+  return transport_->openDataChannel(local_port);
 }
 
-error_t Session::pollForScanBlock(rapidjson::Document& notification, std::vector<uint8_t>& oob_data)
+error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet_buffer)
 {
-  std::unique_lock<std::mutex> scan_block_queue_lock(scan_block_queue_mutex_);
-  bool wait_result = scan_block_queue_cv_.wait_for(scan_block_queue_lock, std::chrono::milliseconds(timeout_), [&]() {
-    return (scan_block_queue_primary_.size() > 0) || (scan_block_queue_oob_.size() > 0);
+  std::unique_lock<std::mutex> scan_packet_queue_lock(scan_packet_queue_mutex_);
+  bool wait_result = scan_packet_queue_cv_.wait_for(scan_packet_queue_lock, std::chrono::milliseconds(timeout_ms_), [&]() {
+    return (scan_packet_queue_.size() > 0);
   });
   if (wait_result) {
-    if (scan_block_queue_primary_.size() > 0) {
-      notification = std::move(scan_block_queue_primary_.front());
-      scan_block_queue_primary_.pop_front();
-    }
-    else if (scan_block_queue_oob_.size() > 0) {
-      oob_data = std::move(scan_block_queue_oob_.front());
-      scan_block_queue_oob_.pop_front();
+    if (scan_packet_queue_.size() > 0) {
+      scan_packet_buffer = std::move(scan_packet_queue_.front());
+      scan_packet_queue_.pop_front();
     }
     return error_t::no_error;
   }
@@ -169,23 +164,15 @@ void Session::onMessageReceived(rapidjson::Document message)
       response_queue_cv_.notify_one();
     }
   }
-  else if ((message.HasMember("method") && message["method"] == "notification/laserScan") &&
-           message.HasMember("params") && !message.HasMember("id")) {
-    std::lock_guard<std::mutex> scan_block_queue_lock(scan_block_queue_mutex_);
-    if (scan_block_queue_primary_.size() == SCAN_BLOCK_BUFFERING_COUNT)
-      scan_block_queue_primary_.pop_front();
-    scan_block_queue_primary_.push_back(std::move(message));
-    scan_block_queue_cv_.notify_one();
-  }
 }
 
-void Session::onOobPacketReceived(std::vector<uint8_t> oob_packet)
+void Session::onScanPacketReceived(std::vector<uint8_t> scan_packet)
 {
-  std::lock_guard<std::mutex> scan_block_queue_lock(scan_block_queue_mutex_);
-  if (scan_block_queue_oob_.size() == SCAN_BLOCK_BUFFERING_COUNT)
-    scan_block_queue_oob_.pop_front();
-  scan_block_queue_oob_.push_back(std::move(oob_packet));
-  scan_block_queue_cv_.notify_one();
+  std::lock_guard<std::mutex> scan_packet_queue_lock(scan_packet_queue_mutex_);
+  if (scan_packet_queue_.size() == SCAN_BLOCK_BUFFERING_COUNT)
+    scan_packet_queue_.pop_front();
+  scan_packet_queue_.push_back(std::move(scan_packet));
+  scan_packet_queue_cv_.notify_one();
 }
 
 }

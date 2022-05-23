@@ -8,6 +8,23 @@
 namespace ldcp_sdk
 {
 
+#pragma pack(push, 1)
+struct ScanPacketHeader
+{
+  uint16_t signature;
+  uint16_t frame_index;
+  uint8_t block_index;
+  uint8_t block_count;
+  uint16_t block_length;
+  uint32_t timestamp;
+  uint16_t checksum;
+  struct {
+    uint16_t payload_layout : 4;
+    uint16_t reserved : 12;
+  } flags;
+};
+#pragma pack(pop)
+
 class ScanBlock
 {
 public:
@@ -22,43 +39,6 @@ public:
   uint32_t timestamp;
   std::vector<BlockData> layers;
 };
-
-const int LASER_SCAN_BLOCK_LENGTH_10HZ = 288;
-const int LASER_SCAN_BLOCK_LENGTH_15HZ = 192;
-const int LASER_SCAN_BLOCK_LENGTH_20HZ = 144;
-const int LASER_SCAN_BLOCK_LENGTH_25HZ_30HZ = 96;
-
-#pragma pack(push, 1)
-struct OobPacket
-{
-  uint16_t signature;
-  uint16_t frame_num;
-  uint8_t block_num;
-  uint8_t flags;
-  uint16_t count;
-  uint32_t timestamp;
-  uint16_t checksum;
-  uint16_t reserved;
-  union {
-    struct {
-      uint16_t ranges[LASER_SCAN_BLOCK_LENGTH_10HZ];
-      uint8_t intensities[LASER_SCAN_BLOCK_LENGTH_10HZ];
-    } data_10hz;
-    struct {
-      uint16_t ranges[LASER_SCAN_BLOCK_LENGTH_15HZ];
-      uint8_t intensities[LASER_SCAN_BLOCK_LENGTH_15HZ];
-    } data_15hz;
-    struct {
-      uint16_t ranges[LASER_SCAN_BLOCK_LENGTH_20HZ];
-      uint8_t intensities[LASER_SCAN_BLOCK_LENGTH_20HZ];
-    } data_20hz;
-    struct {
-      uint16_t ranges[LASER_SCAN_BLOCK_LENGTH_25HZ_30HZ];
-      uint8_t intensities[LASER_SCAN_BLOCK_LENGTH_25HZ_30HZ];
-    } data_25hz_30hz;
-  } payload;
-};
-#pragma pack(pop)
 
 class ScanFrame
 {

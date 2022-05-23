@@ -27,21 +27,20 @@ public:
   void executeCommand(rapidjson::Document request);
   error_t executeCommand(rapidjson::Document request, rapidjson::Document& response);
 
-  error_t enableOobTransport(const Location& location);
+  error_t openDataChannel(const in_port_t local_port);
 
-  error_t pollForScanBlock(rapidjson::Document& notification,
-                           std::vector<uint8_t>& oob_data);
+  error_t receiveScanPacket(std::vector<uint8_t>& scan_packet_buffer);
 
 private:
   void onMessageReceived(rapidjson::Document message);
-  void onOobPacketReceived(std::vector<uint8_t> oob_packet);
+  void onScanPacketReceived(std::vector<uint8_t> scan_packet);
 
 private:
   static const int DEFAULT_TIMEOUT = 3000;
   static const int SCAN_BLOCK_BUFFERING_COUNT = 32;
 
 private:
-  int timeout_;
+  int timeout_ms_;
 
   std::unique_ptr<Transport> transport_;
 
@@ -52,10 +51,9 @@ private:
   std::mutex response_queue_mutex_;
   std::condition_variable response_queue_cv_;
 
-  std::deque<rapidjson::Document> scan_block_queue_primary_;
-  std::deque<std::vector<uint8_t>> scan_block_queue_oob_;
-  std::mutex scan_block_queue_mutex_;
-  std::condition_variable scan_block_queue_cv_;
+  std::deque<std::vector<uint8_t>> scan_packet_queue_;
+  std::mutex scan_packet_queue_mutex_;
+  std::condition_variable scan_packet_queue_cv_;
 };
 
 }
