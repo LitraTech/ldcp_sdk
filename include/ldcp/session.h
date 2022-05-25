@@ -29,7 +29,7 @@ public:
 
   error_t openDataChannel(const in_port_t local_port);
 
-  error_t receiveScanPacket(std::vector<uint8_t>& scan_packet_buffer);
+  error_t receiveScanPacket(std::vector<uint8_t>& scan_packet);
 
 private:
   void onMessageReceived(rapidjson::Document message);

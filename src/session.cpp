@@ -64,12 +64,7 @@ bool Session::isOpened() const
 rapidjson::Document Session::createEmptyRequestObject()
 {
   rapidjson::Document request;
-  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-
-  request.SetObject()
-      .AddMember("jsonrpc", "2.0", allocator)
-      .AddMember("method", rapidjson::Value(), allocator);
-
+  request.SetObject().AddMember("jsonrpc", "2.0", request.GetAllocator());
   return request;
 }
 
@@ -133,7 +128,7 @@ error_t Session::openDataChannel(const in_port_t local_port)
   return transport_->openDataChannel(local_port);
 }
 
-error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet_buffer)
+error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet)
 {
   std::unique_lock<std::mutex> scan_packet_queue_lock(scan_packet_queue_mutex_);
   bool wait_result = scan_packet_queue_cv_.wait_for(scan_packet_queue_lock, std::chrono::milliseconds(timeout_ms_), [&]() {
@@ -141,7 +136,7 @@ error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet_buffer)
   });
   if (wait_result) {
     if (scan_packet_queue_.size() > 0) {
-      scan_packet_buffer = std::move(scan_packet_queue_.front());
+      scan_packet = std::move(scan_packet_queue_.front());
       scan_packet_queue_.pop_front();
     }
     return error_t::no_error;

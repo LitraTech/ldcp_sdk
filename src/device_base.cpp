@@ -4,11 +4,6 @@
 namespace ldcp_sdk
 {
 
-DeviceBase::DeviceBase(const ldcp_sdk::DeviceInfo& device_info)
-  : DeviceBase(device_info.location())
-{
-}
-
 DeviceBase::DeviceBase(const Location& location)
   : session_(new Session())
 {
