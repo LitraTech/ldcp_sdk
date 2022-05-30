@@ -51,7 +51,6 @@ private:
   std::deque<rapidjson::Document> outgoing_message_queue_;
 
   asio::ip::udp::socket data_channel_socket_;
-  asio::ip::udp::endpoint sender_address_;
 
   std::array<uint8_t, SCAN_PACKET_LENGTH_MAX> scan_packet_buffer_;
 };
@@ -156,10 +155,10 @@ error_t NetworkTransport::openDataChannel(const in_port_t& local_port)
   data_channel_socket_.bind(local_address, bind_result);
 
   if (!bind_result) {
-    data_channel_socket_.async_receive_from(asio::buffer(scan_packet_buffer_),
-                                   sender_address_,
-                                   std::bind(&NetworkTransport::scanPacketHandler,
-                                             this, std::placeholders::_1, std::placeholders::_2));
+    data_channel_socket_.connect(asio::ip::udp::endpoint(device_address_.address(), device_address_.port()));
+    data_channel_socket_.async_receive(asio::buffer(scan_packet_buffer_),
+                                       std::bind(&NetworkTransport::scanPacketHandler,
+                                                 this, std::placeholders::_1, std::placeholders::_2));
     return error_t::no_error;
   }
   else {
@@ -216,19 +215,16 @@ void NetworkTransport::outgoingMessageHandler(const asio::error_code& error, siz
 void NetworkTransport::scanPacketHandler(const asio::error_code& error, size_t bytes_transferred)
 {
   if (!error) {
-    if ((sender_address_.address() == device_address_.address() &&
-         sender_address_.port() == device_address_.port()) &&
-        received_scan_packet_callback_) {
+    if (received_scan_packet_callback_) {
       if (verifyScanPacket(scan_packet_buffer_.data(), bytes_transferred)) {
         std::vector<uint8_t> scan_packet(scan_packet_buffer_.data(),
                                       scan_packet_buffer_.data() + bytes_transferred);
         received_scan_packet_callback_(std::move(scan_packet));
       }
     }
-    data_channel_socket_.async_receive_from(asio::buffer(scan_packet_buffer_),
-                                   sender_address_,
-                                   std::bind(&NetworkTransport::scanPacketHandler,
-                                             this, std::placeholders::_1, std::placeholders::_2));
+    data_channel_socket_.async_receive(asio::buffer(scan_packet_buffer_),
+                                       std::bind(&NetworkTransport::scanPacketHandler,
+                                                 this, std::placeholders::_1, std::placeholders::_2));
   }
 }
 
