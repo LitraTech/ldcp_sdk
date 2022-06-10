@@ -72,6 +72,9 @@ rapidjson::Document Session::createEmptyRequestObject()
 
 error_t Session::executeCommand(rapidjson::Document request)
 {
+  if (last_error_ != error_t::no_error)
+    return last_error_;
+
   std::lock_guard<std::mutex> command_lock(command_mutex_);
   request.AddMember("id", ++id_, request.GetAllocator());
   transport_->transmitMessage(std::move(request));
@@ -80,21 +83,29 @@ error_t Session::executeCommand(rapidjson::Document request)
 
 error_t Session::executeCommand(rapidjson::Document request, rapidjson::Document& response)
 {
+  if (last_error_ != error_t::no_error)
+    return last_error_;
+
   std::lock_guard<std::mutex> command_lock(command_mutex_);
   std::unique_lock<std::mutex> response_queue_lock(response_queue_mutex_);
 
   request.AddMember("id", ++id_, request.GetAllocator());
   transport_->transmitMessage(std::move(request));
 
+  bool response_available = false, error_occurred = false;
   bool wait_result = response_queue_cv_.wait_for(response_queue_lock, std::chrono::milliseconds(timeout_ms_), [&]() {
     std::remove_if(response_queue_.begin(), response_queue_.end(), [&](const rapidjson::Document& document) {
       return (document["id"].GetInt() < id_);
     });
-    return (response_queue_.size() > 0 && response_queue_.front()["id"] == id_);
+    response_available = (response_queue_.size() > 0 && response_queue_.front()["id"] == id_);
+    error_occurred = (last_error_ != error_t::no_error);
+    return (response_available || error_occurred);
   });
   if (wait_result) {
-    rapidjson::Document& message = response_queue_.front();
+    if (error_occurred)
+      return last_error_;
 
+    rapidjson::Document& message = response_queue_.front();
     if (message.HasMember("result")) {
       response = std::move(response_queue_.front());
       response_queue_.pop_front();
@@ -133,16 +144,24 @@ error_t Session::openDataChannel(const in_port_t local_port)
 
 error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet)
 {
+  if (last_error_ != error_t::no_error)
+    return last_error_;
+
   std::unique_lock<std::mutex> scan_packet_queue_lock(scan_packet_queue_mutex_);
+  bool scan_packet_available = false, error_occurred = false;
   bool wait_result = scan_packet_queue_cv_.wait_for(scan_packet_queue_lock, std::chrono::milliseconds(timeout_ms_), [&]() {
-    return (scan_packet_queue_.size() > 0);
+    scan_packet_available = (scan_packet_queue_.size() > 0);
+    error_occurred = (last_error_ != error_t::no_error);
+    return (scan_packet_available || error_occurred);
   });
   if (wait_result) {
-    if (scan_packet_queue_.size() > 0) {
+    if (error_occurred)
+      return last_error_;
+    else {
       scan_packet = std::move(scan_packet_queue_.front());
       scan_packet_queue_.pop_front();
+      return error_t::no_error;
     }
-    return error_t::no_error;
   }
   else
     return error_t::timed_out;
