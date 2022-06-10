@@ -24,7 +24,7 @@ public:
   bool isOpened() const;
 
   rapidjson::Document createEmptyRequestObject();
-  void executeCommand(rapidjson::Document request);
+  error_t executeCommand(rapidjson::Document request);
   error_t executeCommand(rapidjson::Document request, rapidjson::Document& response);
 
   error_t openDataChannel(const in_port_t local_port);
@@ -34,6 +34,7 @@ public:
 private:
   void onMessageReceived(rapidjson::Document message);
   void onScanPacketReceived(std::vector<uint8_t> scan_packet);
+  void onReceiveErrorOccurred(error_t error);
 
 private:
   static const int DEFAULT_TIMEOUT = 3000;
@@ -54,6 +55,8 @@ private:
   std::deque<std::vector<uint8_t>> scan_packet_queue_;
   std::mutex scan_packet_queue_mutex_;
   std::condition_variable scan_packet_queue_cv_;
+
+  error_t last_error_;
 };
 
 }

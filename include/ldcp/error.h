@@ -9,6 +9,7 @@ enum error_t {
   connection_refused,
   timed_out,
   address_in_use,
+  connection_lost,
   protocol_error,
   not_supported,
   invalid_params,

@@ -19,6 +19,7 @@ typedef enum {
 Session::Session()
   : timeout_ms_(DEFAULT_TIMEOUT)
   , id_(-1)
+  , last_error_(error_t::no_error)
 {
 }
 
@@ -38,6 +39,7 @@ error_t Session::open(const Location& location)
   transport_->setReceivedMessageCallback(std::bind(&Session::onMessageReceived, this, std::placeholders::_1));
 #endif
   transport_->setReceivedScanPacketCallback(std::bind(&Session::onScanPacketReceived, this, std::placeholders::_1));
+  transport_->setReceiveErrorCallback(std::bind(&Session::onReceiveErrorOccurred, this, std::placeholders::_1));
   error_t connect_result = transport_->connect(timeout_ms_);
   if (connect_result != error_t::no_error)
     transport_ = nullptr;
@@ -68,11 +70,12 @@ rapidjson::Document Session::createEmptyRequestObject()
   return request;
 }
 
-void Session::executeCommand(rapidjson::Document request)
+error_t Session::executeCommand(rapidjson::Document request)
 {
   std::lock_guard<std::mutex> command_lock(command_mutex_);
   request.AddMember("id", ++id_, request.GetAllocator());
   transport_->transmitMessage(std::move(request));
+  return error_t::no_error;
 }
 
 error_t Session::executeCommand(rapidjson::Document request, rapidjson::Document& response)
@@ -168,6 +171,15 @@ void Session::onScanPacketReceived(std::vector<uint8_t> scan_packet)
     scan_packet_queue_.pop_front();
   scan_packet_queue_.push_back(std::move(scan_packet));
   scan_packet_queue_cv_.notify_one();
+}
+
+void Session::onReceiveErrorOccurred(error_t error)
+{
+  std::lock_guard<std::mutex> response_queue_lock(response_queue_mutex_);
+  std::lock_guard<std::mutex> scan_packet_queue_lock(scan_packet_queue_mutex_);
+  last_error_ = error;
+  response_queue_cv_.notify_all();
+  scan_packet_queue_cv_.notify_all();
 }
 
 }

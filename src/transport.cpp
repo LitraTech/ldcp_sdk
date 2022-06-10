@@ -13,6 +13,12 @@
 #include <deque>
 #include <iomanip>
 
+#ifdef __linux__
+#elif _WIN32
+#include <mstcpip.h>
+#include <WinSock2.h>
+#endif
+
 namespace ldcp_sdk
 {
 
@@ -30,9 +36,9 @@ public:
   virtual error_t openDataChannel(const in_port_t& local_port);
 
 private:
-  void incomingMessageHandler(const asio::error_code& error, size_t bytes_transferred);
-  void outgoingMessageHandler(const asio::error_code& error, size_t);
-  void scanPacketHandler(const asio::error_code& error, size_t bytes_transferred);
+  void incomingMessageHandler(const asio::error_code& error_code, size_t bytes_transferred);
+  void outgoingMessageHandler(const asio::error_code& error_code, size_t);
+  void scanPacketHandler(const asio::error_code& error_code, size_t bytes_transferred);
 
   rapidjson::Document parseIncomingMessage(size_t length);
   void encapsulateOutgoingMessage(rapidjson::Document& message);
@@ -69,19 +75,27 @@ error_t NetworkTransport::connect(int timeout_ms)
   std::condition_variable cv;
 
   asio::error_code connect_result = asio::error::would_block;
-  control_channel_socket_.async_connect(device_address_, [&](const asio::error_code& error) {
-    if (error != asio::error::operation_aborted) {
+  control_channel_socket_.async_connect(device_address_, [&](const asio::error_code& error_code) {
+    if (error_code != asio::error::operation_aborted) {
       {
         std::lock_guard<std::mutex> lock_guard(mutex);
-        connect_result = error;
+        connect_result = error_code;
       }
       cv.notify_one();
     }
 
-    if (!error)
+    if (!error_code) {
+#ifdef __linux__
+#elif _WIN32
+      tcp_keepalive keepalive = { 1, 1500, 1500 };
+      DWORD result = 0;
+      WSAIoctl(control_channel_socket_.native_handle(), SIO_KEEPALIVE_VALS,
+               &keepalive, sizeof(keepalive), NULL, 0, &result, NULL, NULL);
+#endif
       asio::async_read_until(control_channel_socket_, incoming_message_buffer_, "\r\n",
                              std::bind(&NetworkTransport::incomingMessageHandler,
                                        this, std::placeholders::_1, std::placeholders::_2));
+    }
   });
 
   worker_thread_ = std::thread([&]() {
@@ -171,9 +185,9 @@ error_t NetworkTransport::openDataChannel(const in_port_t& local_port)
   }
 }
 
-void NetworkTransport::incomingMessageHandler(const asio::error_code& error, size_t bytes_transferred)
+void NetworkTransport::incomingMessageHandler(const asio::error_code& error_code, size_t bytes_transferred)
 {
-  if (!error) {
+  if (!error_code) {
     if (received_message_callback_) {
       rapidjson::Document message = parseIncomingMessage(bytes_transferred);
       if (!message.IsNull())
@@ -183,13 +197,19 @@ void NetworkTransport::incomingMessageHandler(const asio::error_code& error, siz
                            std::bind(&NetworkTransport::incomingMessageHandler,
                                      this, std::placeholders::_1, std::placeholders::_2));
   }
-  else if (error != asio::error::operation_aborted && receive_error_callback_)
-    receive_error_callback_(error_t::unknown);
+  else if (error_code != asio::error::operation_aborted && receive_error_callback_) {
+    error_t error = error_t::unknown;
+    switch (error_code.value()) {
+      case ERROR_SEM_TIMEOUT:
+        error = error_t::connection_lost; break;
+    }
+    receive_error_callback_(error);
+  }
 }
 
-void NetworkTransport::outgoingMessageHandler(const asio::error_code& error, size_t)
+void NetworkTransport::outgoingMessageHandler(const asio::error_code& error_code, size_t)
 {
-  if (!error) {
+  if (!error_code) {
     for (int i = 0; i < 3; i++) {
       asio::streambuf& streambuf = outgoing_message_buffers_[i];
       streambuf.consume(streambuf.size());
@@ -208,13 +228,13 @@ void NetworkTransport::outgoingMessageHandler(const asio::error_code& error, siz
                                   this, std::placeholders::_1, std::placeholders::_2));
     }
   }
-  else if (error != asio::error::operation_aborted && transmit_error_callback_)
+  else if (error_code != asio::error::operation_aborted && transmit_error_callback_)
     transmit_error_callback_(error_t::unknown);
 }
 
-void NetworkTransport::scanPacketHandler(const asio::error_code& error, size_t bytes_transferred)
+void NetworkTransport::scanPacketHandler(const asio::error_code& error_code, size_t bytes_transferred)
 {
-  if (!error) {
+  if (!error_code) {
     if (received_scan_packet_callback_) {
       if (verifyScanPacket(scan_packet_buffer_.data(), bytes_transferred)) {
         std::vector<uint8_t> scan_packet(scan_packet_buffer_.data(),
