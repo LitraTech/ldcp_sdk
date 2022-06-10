@@ -52,7 +52,7 @@ error_t DeviceBase::queryBootMode(std::string& mode)
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request["method"].SetString("device/queryInfo");
+  request.AddMember("method", "device/queryInfo", allocator);
   request.AddMember("params",
                     rapidjson::Value().SetObject()
                       .AddMember("entry", "device.bootMode", allocator), allocator);
@@ -68,7 +68,7 @@ error_t DeviceBase::queryBootMode(std::string& mode)
 void DeviceBase::reboot()
 {
   rapidjson::Document request = session_->createEmptyRequestObject();
-  request["method"].SetString("device/reboot");
+  request.AddMember("method", "device/reboot", request.GetAllocator());
   session_->executeCommand(std::move(request));
 }
 
