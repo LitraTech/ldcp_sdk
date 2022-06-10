@@ -148,9 +148,11 @@ void NetworkTransport::transmitMessage(rapidjson::Document message)
       rapidjson::Document& document = outgoing_message_queue_.front();
       encapsulateOutgoingMessage(document);
 
-      std::vector<asio::streambuf::const_buffers_type> buffers = { outgoing_message_buffers_[0].data(),
-                                                                   outgoing_message_buffers_[1].data(),
-                                                                   outgoing_message_buffers_[2].data() };
+      std::vector<asio::streambuf::const_buffers_type> buffers = {
+        outgoing_message_buffers_[0].data(),
+        outgoing_message_buffers_[1].data(),
+        outgoing_message_buffers_[2].data()
+      };
       asio::async_write(control_channel_socket_, buffers,
                         std::bind(&NetworkTransport::outgoingMessageHandler,
                                   this, std::placeholders::_1, std::placeholders::_2));
@@ -200,7 +202,10 @@ void NetworkTransport::incomingMessageHandler(const asio::error_code& error_code
   else if (error_code != asio::error::operation_aborted && receive_error_callback_) {
     error_t error = error_t::unknown;
     switch (error_code.value()) {
+#ifdef __linux__
+#elif _WIN32
       case ERROR_SEM_TIMEOUT:
+#endif
         error = error_t::connection_lost; break;
     }
     receive_error_callback_(error);
@@ -220,9 +225,11 @@ void NetworkTransport::outgoingMessageHandler(const asio::error_code& error_code
       rapidjson::Document& document = outgoing_message_queue_.front();
       encapsulateOutgoingMessage(document);
 
-      std::vector<asio::streambuf::const_buffers_type> buffers = { outgoing_message_buffers_[0].data(),
-                                                                   outgoing_message_buffers_[1].data(),
-                                                                   outgoing_message_buffers_[2].data() };
+      std::vector<asio::streambuf::const_buffers_type> buffers = {
+        outgoing_message_buffers_[0].data(),
+        outgoing_message_buffers_[1].data(),
+        outgoing_message_buffers_[2].data()
+      };
       asio::async_write(control_channel_socket_, buffers,
                         std::bind(&NetworkTransport::outgoingMessageHandler,
                                   this, std::placeholders::_1, std::placeholders::_2));
@@ -238,7 +245,7 @@ void NetworkTransport::scanPacketHandler(const asio::error_code& error_code, siz
     if (received_scan_packet_callback_) {
       if (verifyScanPacket(scan_packet_buffer_.data(), bytes_transferred)) {
         std::vector<uint8_t> scan_packet(scan_packet_buffer_.data(),
-                                      scan_packet_buffer_.data() + bytes_transferred);
+                                         scan_packet_buffer_.data() + bytes_transferred);
         received_scan_packet_callback_(std::move(scan_packet));
       }
     }
