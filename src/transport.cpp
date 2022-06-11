@@ -13,8 +13,7 @@
 #include <deque>
 #include <iomanip>
 
-#ifdef __linux__
-#elif _WIN32
+#ifdef _WIN32
 #include <mstcpip.h>
 #include <WinSock2.h>
 #endif
@@ -86,6 +85,13 @@ error_t NetworkTransport::connect(int timeout_ms)
 
     if (!error_code) {
 #ifdef __linux__
+      control_channel_socket_.set_option(asio::socket_base::keep_alive(true));
+      control_channel_socket_.set_option(
+          asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPIDLE>(5));
+      control_channel_socket_.set_option(
+          asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPINTVL>(5));
+      control_channel_socket_.set_option(
+          asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPCNT>(2));
 #elif _WIN32
       tcp_keepalive keepalive = { 1, 1500, 1500 };
       DWORD result = 0;
@@ -201,13 +207,19 @@ void NetworkTransport::incomingMessageHandler(const asio::error_code& error_code
   }
   else if (error_code != asio::error::operation_aborted && receive_error_callback_) {
     error_t error = error_t::unknown;
-    switch (error_code.value()) {
 #ifdef __linux__
+    switch (error_code.value()) {
+      case ENOENT:
+        error = error_t::link_down; break;
+    }
 #elif _WIN32
+    switch (error_code.value()) {
+      case ERROR_CONNECTION_ABORTED:
+        error = error_t::link_down; break;
       case ERROR_SEM_TIMEOUT:
-#endif
         error = error_t::connection_lost; break;
     }
+#endif
     receive_error_callback_(error);
   }
 }
