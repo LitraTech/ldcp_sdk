@@ -21,10 +21,14 @@ error_t Device::open()
 {
   error_t result = DeviceBase::open();
   if (result == error_t::no_error) {
+    in_addr_t target_address = INADDR_NONE;
     in_port_t target_port = 0;
-    result = readSettings(SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT,
-      &target_port);
-    if (result == error_t::no_error)
+    if ((result = readSettings(
+           SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS,
+           &target_address)) == error_t::no_error &&
+        (result = readSettings(
+           SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT,
+           &target_port)) == error_t::no_error)
       result = session_->openDataChannel(target_port);
     if (result != error_t::no_error)
       close();
@@ -45,7 +49,9 @@ error_t Device::readSettings(const std::string& entry_name, void* value)
   error_t result = session_->executeCommand(std::move(request), response);
 
   if (result == error_t::no_error) {
-    if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
+    if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS)
+      *(in_addr_t*)value = inet_addr(response["result"].GetString());
+    else if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
       *(in_port_t*)value = htons(response["result"].GetInt());
     else
       return error_t::not_supported;
@@ -61,7 +67,14 @@ error_t Device::writeSettings(const std::string& entry_name, const void* value)
   request.AddMember("params", rapidjson::Value().SetObject(), allocator);
   request["params"].AddMember("entry",
     rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
-  if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
+  if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS) {
+    request["params"].AddMember(
+        "value",
+        rapidjson::Value().SetString(((const std::string*)value)->c_str(), allocator),
+        allocator
+    );
+  }
+  else if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
     request["params"].AddMember("value", ntohs(*(in_port_t*)value), allocator);
   else
     return error_t::not_supported;
@@ -173,6 +186,8 @@ error_t Device::readScanFrame(ScanFrame<Echos>& scan_frame)
 template error_t Device::readScanFrame<1>(ScanFrame<1>& scan_frame);
 template error_t Device::readScanFrame<2>(ScanFrame<2>& scan_frame);
 
+const std::string Device::SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS =
+    "transport.ethernet.dataChannel.targetAddress";
 const std::string Device::SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT =
     "transport.ethernet.dataChannel.targetPort";
 

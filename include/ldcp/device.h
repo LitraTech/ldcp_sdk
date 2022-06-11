@@ -28,6 +28,7 @@ public:
   error_t readScanFrame(ScanFrame<Echos>& scan_frame);
 
 public:
+  static const std::string SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS;
   static const std::string SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT;
 };
 
