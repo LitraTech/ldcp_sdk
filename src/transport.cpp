@@ -146,7 +146,8 @@ bool NetworkTransport::isConnected() const
 
 void NetworkTransport::transmitMessage(rapidjson::Document message)
 {
-  std::shared_ptr<rapidjson::Document> wrapped_message = std::make_shared<rapidjson::Document>(std::move(message));
+  std::shared_ptr<rapidjson::Document> wrapped_message =
+      std::make_shared<rapidjson::Document>(std::move(message));
   io_service_.dispatch([this, wrapped_message]() {
     bool transmit_in_progress = !outgoing_message_queue_.empty();
     outgoing_message_queue_.push_back(std::move(*wrapped_message));
@@ -174,12 +175,12 @@ error_t NetworkTransport::openDataChannel(const Location& local_location)
 #ifdef __linux__
   const NetworkLocation& location = dynamic_cast<const NetworkLocation&>(local_location);
   asio::ip::udp::endpoint local_address(
-    asio::ip::address_v4(ntohl(location.address())), ntohs(location.port())
+      asio::ip::address_v4(ntohl(location.address())), ntohs(location.port())
   );
 #elif _WIN32
   asio::ip::udp::endpoint local_address(
-    asio::ip::address_v4::any(),
-    ntohs(dynamic_cast<const NetworkLocation&>(local_location).port())
+      asio::ip::address_v4::any(),
+      ntohs(dynamic_cast<const NetworkLocation&>(local_location).port())
   );
 #endif
   asio::error_code bind_result;
@@ -197,6 +198,10 @@ error_t NetworkTransport::openDataChannel(const Location& local_location)
 
     if (bind_result == asio::error::address_in_use)
       return error_t::address_in_use;
+#ifdef __linux__
+    else if (bind_result == std::error_code(EADDRNOTAVAIL, asio::error::get_system_category()))
+      return error_t::invalid_address;
+#endif
     else
       return error_t::unknown;
   }
