@@ -44,6 +44,7 @@ private:
   int timeout_ms_;
 
   std::unique_ptr<Transport> transport_;
+  error_t transport_error_;
 
   int id_;
   std::mutex command_mutex_;
@@ -55,8 +56,6 @@ private:
   std::deque<std::vector<uint8_t>> scan_packet_queue_;
   std::mutex scan_packet_queue_mutex_;
   std::condition_variable scan_packet_queue_cv_;
-
-  error_t last_error_;
 };
 
 }
