@@ -29,7 +29,7 @@ error_t Device::open()
         (result = readSettings(
            SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT,
            &target_port)) == error_t::no_error)
-      result = session_->openDataChannel(target_port);
+      result = session_->openDataChannel(NetworkLocation(target_address, target_port));
     if (result != error_t::no_error)
       close();
   }

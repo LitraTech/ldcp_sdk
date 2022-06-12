@@ -6,9 +6,10 @@ namespace ldcp_sdk
 
 enum error_t {
   no_error = 0,
+  address_in_use,
+  invalid_address,
   connection_refused,
   timed_out,
-  address_in_use,
   link_down,
   connection_lost,
   protocol_error,

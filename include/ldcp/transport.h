@@ -37,7 +37,7 @@ public:
 
   virtual void transmitMessage(rapidjson::Document message) = 0;
 
-  virtual error_t openDataChannel(const in_port_t& local_port) = 0;
+  virtual error_t openDataChannel(const Location& local_location) = 0;
 
   void setReceivedMessageCallback(ReceivedMessageCallback callback);
   void setTransmitErrorCallback(TransmitErrorCallback callback);

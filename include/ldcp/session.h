@@ -27,7 +27,7 @@ public:
   error_t executeCommand(rapidjson::Document request);
   error_t executeCommand(rapidjson::Document request, rapidjson::Document& response);
 
-  error_t openDataChannel(const in_port_t local_port);
+  error_t openDataChannel(const Location& local_location);
 
   error_t receiveScanPacket(std::vector<uint8_t>& scan_packet);
 

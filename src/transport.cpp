@@ -32,7 +32,7 @@ public:
 
   virtual void transmitMessage(rapidjson::Document message);
 
-  virtual error_t openDataChannel(const in_port_t& local_port);
+  virtual error_t openDataChannel(const Location& local_location);
 
 private:
   void incomingMessageHandler(const asio::error_code& error_code, size_t bytes_transferred);
@@ -166,13 +166,22 @@ void NetworkTransport::transmitMessage(rapidjson::Document message)
   });
 }
 
-error_t NetworkTransport::openDataChannel(const in_port_t& local_port)
+error_t NetworkTransport::openDataChannel(const Location& local_location)
 {
   data_channel_socket_.open(asio::ip::udp::v4());
   data_channel_socket_.set_option(asio::ip::udp::socket::reuse_address(true));
 
-  asio::ip::udp::endpoint local_address(asio::ip::address_v4(ntohl(INADDR_ANY)),
-                                        ntohs(local_port));
+#ifdef __linux__
+  const NetworkLocation& location = dynamic_cast<const NetworkLocation&>(local_location);
+  asio::ip::udp::endpoint local_address(
+    asio::ip::address_v4(ntohl(location.address())), ntohs(location.port())
+  );
+#elif _WIN32
+  asio::ip::udp::endpoint local_address(
+    asio::ip::address_v4::any(),
+    ntohs(dynamic_cast<const NetworkLocation&>(local_location).port())
+  );
+#endif
   asio::error_code bind_result;
   data_channel_socket_.bind(local_address, bind_result);
 

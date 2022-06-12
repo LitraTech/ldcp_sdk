@@ -137,9 +137,9 @@ error_t Session::executeCommand(rapidjson::Document request, rapidjson::Document
     return error_t::timed_out;
 }
 
-error_t Session::openDataChannel(const in_port_t local_port)
+error_t Session::openDataChannel(const Location& local_location)
 {
-  return transport_->openDataChannel(local_port);
+  return transport_->openDataChannel(local_location);
 }
 
 error_t Session::receiveScanPacket(std::vector<uint8_t>& scan_packet)
