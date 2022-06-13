@@ -18,7 +18,7 @@ Bootloader::Bootloader(DeviceBase&& other)
 error_t Bootloader::beginUpdate()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("firmware/beginUpdate");
+  request.AddMember("method", "firmware/beginUpdate", request.GetAllocator());
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
 }
@@ -31,7 +31,7 @@ error_t Bootloader::writeData(const uint8_t content[], int length)
 
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request["method"].SetString("firmware/writeData");
+  request.AddMember("method", "firmware/writeData", allocator);
   request.AddMember("params",
                     rapidjson::Value().SetObject()
                       .AddMember("content", rapidjson::StringRef(encoded.c_str()), allocator),
@@ -45,7 +45,7 @@ error_t Bootloader::writeData(const uint8_t content[], int length)
 error_t Bootloader::endUpdate()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("firmware/endUpdate");
+  request.AddMember("method", "firmware/endUpdate", request.GetAllocator());
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
 }
@@ -58,7 +58,7 @@ error_t Bootloader::verifyHash(const uint8_t expected[], bool& passed)
 
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
   rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request["method"].SetString("firmware/verifyHash");
+  request.AddMember("method", "firmware/verifyHash", allocator);
   request.AddMember("params",
                     rapidjson::Value().SetObject()
                       .AddMember("expected", rapidjson::StringRef(encoded.c_str()), allocator),
@@ -74,7 +74,7 @@ error_t Bootloader::verifyHash(const uint8_t expected[], bool& passed)
 error_t Bootloader::commitUpdate()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
-  request["method"].SetString("firmware/commitUpdate");
+  request.AddMember("method", "firmware/commitUpdate", request.GetAllocator());
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
 }
