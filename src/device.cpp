@@ -9,6 +9,7 @@ namespace ldcp_sdk
 
 Device::Device(const Location& location)
   : DeviceBase(location)
+  , properties_(new Properties(*session_))
   , settings_(new Settings(*session_))
 {
 }
@@ -37,6 +38,22 @@ error_t Device::open()
   return result;
 }
 
+error_t Device::startMeasurement()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  request.AddMember("method", "scan/startMeasurement", request.GetAllocator());
+  error_t result = session_->executeCommand(std::move(request), response);
+  return result;
+}
+
+error_t Device::stopMeasurement()
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  request.AddMember("method", "scan/stopMeasurement", request.GetAllocator());
+  error_t result = session_->executeCommand(std::move(request), response);
+  return result;
+}
+
 error_t Device::startStreaming()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
@@ -62,11 +79,6 @@ error_t Device::stopStreaming()
   request.AddMember("method", "scan/stopStreaming", request.GetAllocator());
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
-}
-
-Device::Settings& Device::settings()
-{
-  return *settings_;
 }
 
 template<int Echos>
@@ -127,6 +139,42 @@ error_t Device::readScanFrame(ScanFrame<Echos>& scan_frame)
 
 template error_t Device::readScanFrame<1>(ScanFrame<1>& scan_frame);
 template error_t Device::readScanFrame<2>(ScanFrame<2>& scan_frame);
+
+Device::Properties& Device::properties()
+{
+  return *properties_;
+}
+
+Device::Settings& Device::settings()
+{
+  return *settings_;
+}
+
+const std::string Device::Properties::IDENTITY_MODEL_NAME = "identity.modelName";
+const std::string Device::Properties::IDENTITY_SERIAL_NUMBER = "identity.serialNumber";
+const std::string Device::Properties::VERSION_FIRMWARE = "version.firmware";
+
+error_t Device::Properties::get(const std::string& entry_name, void* value)
+{
+  rapidjson::Document request = session_.createEmptyRequestObject();
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "device/queryInfo", allocator);
+  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
+  request["params"].AddMember("entry",
+    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
+
+  rapidjson::Document response;
+  error_t result = session_.executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error)
+    *(std::string*)value = response["result"].GetString();
+  return result;
+}
+
+Device::Properties::Properties(Session& session)
+  : session_(session)
+{
+}
 
 const std::string Device::Settings::ENTRY_RANGEFINDER_ECHO_MODE = "rangefinder.echoMode";
 const std::string Device::Settings::ENTRY_SCAN_RESOLUTION = "scan.resolution";

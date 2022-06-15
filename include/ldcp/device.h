@@ -11,6 +11,7 @@ namespace ldcp_sdk
 class Device : public DeviceBase
 {
 public:
+  class Properties;
   class Settings;
 
 public:
@@ -19,6 +20,9 @@ public:
 
   error_t open() override;
 
+  error_t startMeasurement();
+  error_t stopMeasurement();
+
   error_t startStreaming();
   error_t startStreaming(int frame_count);
   error_t stopStreaming();
@@ -26,10 +30,31 @@ public:
   template<int Echos>
   error_t readScanFrame(ScanFrame<Echos>& scan_frame);
 
+  Properties& properties();
   Settings& settings();
 
 private:
+  std::unique_ptr<Properties> properties_;
   std::unique_ptr<Settings> settings_;
+};
+
+class Device::Properties
+{
+  friend Device;
+
+public:
+  static const std::string IDENTITY_MODEL_NAME;
+  static const std::string IDENTITY_SERIAL_NUMBER;
+  static const std::string VERSION_FIRMWARE;
+
+public:
+  error_t get(const std::string& entry_name, void* value);
+
+private:
+  Properties(Session& session);
+
+private:
+  Session& session_;
 };
 
 class Device::Settings
