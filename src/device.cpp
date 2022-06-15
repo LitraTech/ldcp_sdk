@@ -9,6 +9,7 @@ namespace ldcp_sdk
 
 Device::Device(const Location& location)
   : DeviceBase(location)
+  , settings_(new Settings(*session_))
 {
 }
 
@@ -23,80 +24,16 @@ error_t Device::open()
   if (result == error_t::no_error) {
     in_addr_t target_address = INADDR_NONE;
     in_port_t target_port = 0;
-    if ((result = readSettings(
-           SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS,
+    if ((result = settings_->read(
+           Settings::ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS,
            &target_address)) == error_t::no_error &&
-        (result = readSettings(
-           SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT,
+        (result = settings_->read(
+           Settings::ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT,
            &target_port)) == error_t::no_error)
       result = session_->openDataChannel(NetworkLocation(target_address, target_port));
     if (result != error_t::no_error)
       close();
   }
-  return result;
-}
-
-error_t Device::readSettings(const std::string& entry_name, void* value)
-{
-  rapidjson::Document request = session_->createEmptyRequestObject();
-  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request.AddMember("method", "settings/read", allocator);
-  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
-  request["params"].AddMember("entry",
-    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
-
-  rapidjson::Document response;
-  error_t result = session_->executeCommand(std::move(request), response);
-
-  if (result == error_t::no_error) {
-    if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS)
-      *(in_addr_t*)value = inet_addr(response["result"].GetString());
-    else if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
-      *(in_port_t*)value = htons(response["result"].GetInt());
-    else
-      return error_t::not_supported;
-  }
-  return result;
-}
-
-error_t Device::writeSettings(const std::string& entry_name, const void* value)
-{
-  rapidjson::Document request = session_->createEmptyRequestObject();
-  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request.AddMember("method", "settings/write", allocator);
-  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
-  request["params"].AddMember("entry",
-    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
-  if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS) {
-    request["params"].AddMember(
-        "value",
-        rapidjson::Value().SetString(((const std::string*)value)->c_str(), allocator),
-        allocator
-    );
-  }
-  else if (entry_name == SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
-    request["params"].AddMember("value", ntohs(*(in_port_t*)value), allocator);
-  else
-    return error_t::not_supported;
-
-  rapidjson::Document response;
-  error_t result = session_->executeCommand(std::move(request), response);
-
-  return result;
-}
-
-error_t Device::persistSettings(const std::string& entry_name)
-{
-  rapidjson::Document request = session_->createEmptyRequestObject();
-  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
-  request.AddMember("method", "settings/persist", allocator);
-  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
-  request["params"].AddMember("entry",
-    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
-
-  rapidjson::Document response;
-  error_t result = session_->executeCommand(std::move(request), response);
-
   return result;
 }
 
@@ -125,6 +62,11 @@ error_t Device::stopStreaming()
   request.AddMember("method", "scan/stopStreaming", request.GetAllocator());
   error_t result = session_->executeCommand(std::move(request), response);
   return result;
+}
+
+Device::Settings& Device::settings()
+{
+  return *settings_;
 }
 
 template<int Echos>
@@ -186,9 +128,159 @@ error_t Device::readScanFrame(ScanFrame<Echos>& scan_frame)
 template error_t Device::readScanFrame<1>(ScanFrame<1>& scan_frame);
 template error_t Device::readScanFrame<2>(ScanFrame<2>& scan_frame);
 
-const std::string Device::SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS =
-    "transport.ethernet.dataChannel.targetAddress";
-const std::string Device::SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT =
-    "transport.ethernet.dataChannel.targetPort";
+const std::string Device::Settings::ENTRY_RANGEFINDER_ECHO_MODE = "rangefinder.echoMode";
+const std::string Device::Settings::ENTRY_SCAN_RESOLUTION = "scan.resolution";
+const std::string Device::Settings::ENTRY_SCAN_FREQUENCY = "scan.frequency";
+const std::string Device::Settings::ENTRY_FILTERS_SHADOW_FILTER_ENABLED = "filters.shadowFilter.enabled";
+const std::string Device::Settings::ENTRY_FILTERS_SHADOW_FILTER_STRENGTH = "filters.shadowFilter.strength";
+const std::string Device::Settings::ENTRY_CONNECTIVITY_ETHERNET_IPV4_ADDRESS = "connectivity.ethernet.ipv4.address";
+const std::string Device::Settings::ENTRY_CONNECTIVITY_ETHERNET_IPV4_SUBNET = "connectivity.ethernet.ipv4.subnet";
+const std::string Device::Settings::ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS = "transport.ethernet.dataChannel.targetAddress";
+const std::string Device::Settings::ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT = "transport.ethernet.dataChannel.targetPort";
+
+error_t Device::Settings::read(const std::string& entry_name, void* value)
+{
+  rapidjson::Document request = session_.createEmptyRequestObject();
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/read", allocator);
+  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
+  request["params"].AddMember("entry",
+    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
+
+  rapidjson::Document response;
+  error_t result = session_.executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error) {
+    if (entry_name == ENTRY_RANGEFINDER_ECHO_MODE) {
+      const std::string mode_string = response["result"].GetString();
+      if (mode_string == "singleFirst")
+        *((echo_mode_t*)value) = ECHO_MODE_SINGLE_FIRST;
+      else if (mode_string == "singleStrongest")
+        *((echo_mode_t*)value) = ECHO_MODE_SINGLE_STRONGEST;
+      else if (mode_string == "singleLast")
+        *((echo_mode_t*)value) = ECHO_MODE_SINGLE_LAST;
+      else if (mode_string == "dual")
+        *((echo_mode_t*)value) = ECHO_MODE_DUAL;
+      else
+        return error_t::not_supported;
+    }
+    else if (entry_name == ENTRY_SCAN_RESOLUTION) {
+      const std::string resolution_string = response["result"].GetString();
+      if (resolution_string == "90k")
+        *((scan_resolution_t*)value) = SCAN_RESOLUTION_90K;
+      else if (resolution_string == "60k")
+        *((scan_resolution_t*)value) = SCAN_RESOLUTION_60K;
+      else if (resolution_string == "30k")
+        *((scan_resolution_t*)value) = SCAN_RESOLUTION_30K;
+      else if (resolution_string == "15k")
+        *((scan_resolution_t*)value) = SCAN_RESOLUTION_15K;
+      else
+        return error_t::not_supported;
+    }
+    else if (entry_name == ENTRY_SCAN_FREQUENCY)
+      *(int*)value = response["result"].GetInt();
+    else if (entry_name == ENTRY_FILTERS_SHADOW_FILTER_ENABLED)
+      *(bool*)value = response["result"].GetBool();
+    else if (entry_name == ENTRY_FILTERS_SHADOW_FILTER_STRENGTH)
+      *(int*)value = response["result"].GetInt();
+    else if (entry_name == ENTRY_CONNECTIVITY_ETHERNET_IPV4_ADDRESS)
+      *(in_addr_t*)value = inet_addr(response["result"].GetString());
+    else if (entry_name == ENTRY_CONNECTIVITY_ETHERNET_IPV4_SUBNET)
+      *(in_addr_t*)value = inet_addr(response["result"].GetString());
+    else if (entry_name == ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS)
+      *(in_addr_t*)value = inet_addr(response["result"].GetString());
+    else if (entry_name == ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
+      *(in_port_t*)value = htons(response["result"].GetInt());
+    else
+      return error_t::not_supported;
+  }
+  return result;
+}
+
+error_t Device::Settings::write(const std::string& entry_name, const void* value)
+{
+  rapidjson::Document request = session_.createEmptyRequestObject();
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/write", allocator);
+  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
+  request["params"].AddMember("entry",
+    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
+  if (entry_name == ENTRY_RANGEFINDER_ECHO_MODE) {
+    switch (*(const echo_mode_t*)value) {
+      case ECHO_MODE_SINGLE_FIRST:
+        request["params"].AddMember("value", "singleFirst", allocator);
+        break;
+      case ECHO_MODE_SINGLE_STRONGEST:
+        request["params"].AddMember("value", "singleStrongest", allocator);
+        break;
+      case ECHO_MODE_SINGLE_LAST:
+        request["params"].AddMember("value", "singleLast", allocator);
+        break;
+      case ECHO_MODE_DUAL:
+        request["params"].AddMember("value", "dual", allocator);
+        break;
+    }
+  }
+  else if (entry_name == ENTRY_SCAN_RESOLUTION) {
+    switch (*(const scan_resolution_t*)value) {
+      case SCAN_RESOLUTION_90K:
+        request["params"].AddMember("value", "90k", allocator);
+        break;
+      case SCAN_RESOLUTION_60K:
+        request["params"].AddMember("value", "60k", allocator);
+        break;
+      case SCAN_RESOLUTION_30K:
+        request["params"].AddMember("value", "30k", allocator);
+        break;
+      case SCAN_RESOLUTION_15K:
+        request["params"].AddMember("value", "15k", allocator);
+        break;
+    }
+  }
+  else if (entry_name == ENTRY_SCAN_FREQUENCY)
+    request["params"].AddMember("value", *(const int*)value, allocator);
+  else if (entry_name == ENTRY_FILTERS_SHADOW_FILTER_ENABLED)
+    request["params"].AddMember("value", *(const bool*)value, allocator);
+  else if (entry_name == ENTRY_FILTERS_SHADOW_FILTER_STRENGTH)
+    request["params"].AddMember("value", *(const int*)value, allocator);
+  else if (entry_name == ENTRY_CONNECTIVITY_ETHERNET_IPV4_ADDRESS ||
+           entry_name == ENTRY_CONNECTIVITY_ETHERNET_IPV4_SUBNET ||
+           entry_name == ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS) {
+    request["params"].AddMember(
+        "value",
+        rapidjson::Value().SetString(((const std::string*)value)->c_str(), allocator),
+        allocator
+    );
+  }
+  else if (entry_name == ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT)
+    request["params"].AddMember("value", ntohs(*(in_port_t*)value), allocator);
+  else
+    return error_t::not_supported;
+
+  rapidjson::Document response;
+  error_t result = session_.executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::Settings::persist(const std::string& entry_name)
+{
+  rapidjson::Document request = session_.createEmptyRequestObject();
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/persist", allocator);
+  request.AddMember("params", rapidjson::Value().SetObject(), allocator);
+  request["params"].AddMember("entry",
+    rapidjson::Value().SetString(entry_name.c_str(), allocator), allocator);
+
+  rapidjson::Document response;
+  error_t result = session_.executeCommand(std::move(request), response);
+
+  return result;
+}
+
+Device::Settings::Settings(Session& session)
+  : session_(session)
+{
+}
 
 }

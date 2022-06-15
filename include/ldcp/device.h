@@ -11,14 +11,13 @@ namespace ldcp_sdk
 class Device : public DeviceBase
 {
 public:
+  class Settings;
+
+public:
   Device(const Location& location);
   Device(const DeviceInfo& device_info);
 
   error_t open() override;
-
-  error_t readSettings(const std::string& entry_name, void* value);
-  error_t writeSettings(const std::string& entry_name, const void* value);
-  error_t persistSettings(const std::string& entry_name);
 
   error_t startStreaming();
   error_t startStreaming(int frame_count);
@@ -27,9 +26,52 @@ public:
   template<int Echos>
   error_t readScanFrame(ScanFrame<Echos>& scan_frame);
 
+  Settings& settings();
+
+private:
+  std::unique_ptr<Settings> settings_;
+};
+
+class Device::Settings
+{
+  friend Device;
+
 public:
-  static const std::string SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS;
-  static const std::string SETTINGS_ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT;
+  static const std::string ENTRY_RANGEFINDER_ECHO_MODE;
+  static const std::string ENTRY_SCAN_RESOLUTION;
+  static const std::string ENTRY_SCAN_FREQUENCY;
+  static const std::string ENTRY_FILTERS_SHADOW_FILTER_ENABLED;
+  static const std::string ENTRY_FILTERS_SHADOW_FILTER_STRENGTH;
+  static const std::string ENTRY_CONNECTIVITY_ETHERNET_IPV4_ADDRESS;
+  static const std::string ENTRY_CONNECTIVITY_ETHERNET_IPV4_SUBNET;
+  static const std::string ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_ADDRESS;
+  static const std::string ENTRY_TRANSPORT_ETHERNET_DATA_CHANNEL_TARGET_PORT;
+
+public:
+  enum echo_mode_t {
+    ECHO_MODE_SINGLE_FIRST,
+    ECHO_MODE_SINGLE_STRONGEST,
+    ECHO_MODE_SINGLE_LAST,
+    ECHO_MODE_DUAL
+  };
+
+  enum scan_resolution_t {
+    SCAN_RESOLUTION_90K,
+    SCAN_RESOLUTION_60K,
+    SCAN_RESOLUTION_30K,
+    SCAN_RESOLUTION_15K
+  };
+
+public:
+  error_t read(const std::string& entry_name, void* value);
+  error_t write(const std::string& entry_name, const void* value);
+  error_t persist(const std::string& entry_name);
+
+private:
+  Settings(Session& session);
+
+private:
+  Session& session_;
 };
 
 }
