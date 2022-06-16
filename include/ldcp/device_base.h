@@ -16,7 +16,6 @@ class DeviceBase
 {
 public:
   DeviceBase(const Location& location);
-  DeviceBase(DeviceBase&& other);
   virtual ~DeviceBase();
 
   const Location& location() const;

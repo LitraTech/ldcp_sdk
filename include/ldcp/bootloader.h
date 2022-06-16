@@ -13,7 +13,6 @@ public:
 
 public:
   Bootloader(const Location& location);
-  Bootloader(DeviceBase&& other);
 
   error_t beginUpdate();
   error_t writeData(const uint8_t content[], int length);

@@ -10,11 +10,6 @@ Bootloader::Bootloader(const Location& location)
 {
 }
 
-Bootloader::Bootloader(DeviceBase&& other)
-  : DeviceBase(std::move(other))
-{
-}
-
 error_t Bootloader::beginUpdate()
 {
   rapidjson::Document request = session_->createEmptyRequestObject(), response;
