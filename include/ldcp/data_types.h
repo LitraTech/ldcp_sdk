@@ -8,10 +8,18 @@
 namespace ldcp_sdk
 {
 
-typedef enum {
+enum scan_resolution_t {
+  SCAN_RESOLUTION_120K,
+  SCAN_RESOLUTION_90K,
+  SCAN_RESOLUTION_60K,
+  SCAN_RESOLUTION_30K,
+  SCAN_RESOLUTION_15K
+};
+
+enum angular_fov_t {
   ANGULAR_FOV_270DEG,
   ANGULAR_FOV_360DEG
-} angular_fov_t;
+};
 
 enum {
   INTENSITY_WIDTH_8BIT,

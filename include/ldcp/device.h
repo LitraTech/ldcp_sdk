@@ -46,6 +46,8 @@ public:
   error_t getOobAutoStartStreaming(bool& enabled);
   error_t getOobTargetAddress(in_addr_t& address);
   error_t getOobTargetPort(in_port_t& port);
+  error_t getScanResolution(scan_resolution_t& resolution);
+  error_t getAngularFov(angular_fov_t& angular_fov);
   error_t setUserMacAddress(const uint8_t address[]);
   error_t setNetworkAddress(in_addr_t address);
   error_t setSubnetMask(in_addr_t subnet);
@@ -57,6 +59,8 @@ public:
   error_t setOobAutoStartStreaming(bool enabled);
   error_t setOobTargetAddress(in_addr_t address);
   error_t setOobTargetPort(in_port_t port);
+  error_t setScanResolution(scan_resolution_t resolution);
+  error_t setAngularFov(angular_fov_t angular_fov);
   error_t persistSettings();
 
   void rebootToBootloader();

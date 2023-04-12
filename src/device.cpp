@@ -499,6 +499,59 @@ error_t Device::getOobTargetPort(in_port_t& port)
   return result;
 }
 
+error_t Device::getScanResolution(scan_resolution_t& resolution)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/read", allocator);
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "scan.resolution", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+  if (result == error_t::no_error) {
+    std::string resolution_string = response["result"].GetString();
+    if (resolution_string == "120k")
+      resolution = SCAN_RESOLUTION_120K;
+    else if (resolution_string == "90k")
+      resolution = SCAN_RESOLUTION_90K;
+    else if (resolution_string == "60k")
+      resolution = SCAN_RESOLUTION_60K;
+    else if (resolution_string == "30k")
+      resolution = SCAN_RESOLUTION_30K;
+    else if (resolution_string == "15k")
+      resolution = SCAN_RESOLUTION_15K;
+    else
+      result = error_t::device_error;
+  }
+
+  return result;
+}
+
+error_t Device::getAngularFov(angular_fov_t& angular_fov)
+{
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/read", allocator);
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "scan.angularFov", allocator), allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  if (result == error_t::no_error) {
+    std::string angular_fov_string = response["result"].GetString();
+    if (angular_fov_string == "270deg")
+      angular_fov = ANGULAR_FOV_270DEG;
+    else if (angular_fov_string == "360deg")
+      angular_fov = ANGULAR_FOV_360DEG;
+    else
+      result = error_t::device_error;
+  }
+
+  return result;
+}
+
 error_t Device::setUserMacAddress(const uint8_t address[])
 {
   std::string value(17 + 1, '\0');
@@ -677,6 +730,71 @@ error_t Device::setOobTargetPort(in_port_t port)
                     rapidjson::Value().SetObject()
                       .AddMember("entry", "transport.oob.targetPort", allocator)
                       .AddMember("value", ntohs(port), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setScanResolution(scan_resolution_t resolution)
+{
+  std::string resolution_string;
+  switch (resolution) {
+    case SCAN_RESOLUTION_120K:
+      resolution_string = "120k";
+      break;
+    case SCAN_RESOLUTION_90K:
+      resolution_string = "90k";
+      break;
+    case SCAN_RESOLUTION_60K:
+      resolution_string = "60k";
+      break;
+    case SCAN_RESOLUTION_30K:
+      resolution_string = "30k";
+      break;
+    case SCAN_RESOLUTION_15K:
+      resolution_string = "15k";
+      break;
+    default:
+      return error_t::not_supported;
+  }
+
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/write", allocator);
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "scan.resolution", allocator)
+                      .AddMember("value", rapidjson::StringRef(resolution_string.c_str()), allocator),
+                    allocator);
+
+  error_t result = session_->executeCommand(std::move(request), response);
+
+  return result;
+}
+
+error_t Device::setAngularFov(angular_fov_t angular_fov)
+{
+  std::string angular_fov_string;
+  switch (angular_fov) {
+    case ANGULAR_FOV_270DEG:
+      angular_fov_string = "270deg";
+      break;
+    case ANGULAR_FOV_360DEG:
+      angular_fov_string = "360deg";
+      break;
+    default:
+      return error_t::not_supported;
+  }
+
+  rapidjson::Document request = session_->createEmptyRequestObject(), response;
+  rapidjson::Document::AllocatorType& allocator = request.GetAllocator();
+  request.AddMember("method", "settings/write", allocator);
+  request.AddMember("params",
+                    rapidjson::Value().SetObject()
+                      .AddMember("entry", "scan.angularFov", allocator)
+                      .AddMember("value", rapidjson::StringRef(angular_fov_string.c_str()), allocator),
                     allocator);
 
   error_t result = session_->executeCommand(std::move(request), response);
